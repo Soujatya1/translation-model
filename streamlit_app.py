@@ -1,56 +1,81 @@
 import streamlit as st
-from openai import OpenAI
+from docx import Document
+from deep_translator import GoogleTranslator
 
-# Show title and description.
-st.title("💬 Chatbot")
-st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-    "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
-)
+def translate_doc(doc, destination='hi'):
+    """
+    Translate a Word document and save the result with the same format, showing only the translated text.
+    
+    :param doc: Word doc object (from `Document` class)
+    :param destination: Target language (default is Hindi 'hi')
+    """
+    translator = GoogleTranslator(source='auto', target=destination)
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
+    # Translate paragraphs
+    for p in doc.paragraphs:
+        if p.text.strip():  # Check if the paragraph is not empty
+            for run in p.runs:  # Iterate over runs in the paragraph to preserve formatting
+                if run.text.strip():  # Translate only non-empty runs
+                    try:
+                        translated_text = translator.translate(run.text)
+                        run.text = translated_text  # Replace text while preserving formatting
+                    except Exception as e:
+                        print(f"Error translating paragraph: {e}")
+                        continue  # Skip this run if there's an error
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+    # Translate table cells
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                if cell.text.strip():  # Check if the cell is not empty
+                    for run in cell.paragraphs[0].runs:  # Iterate over runs in the cell
+                        if run.text.strip():  # Translate only non-empty runs
+                            try:
+                                translated_text = translator.translate(run.text)
+                                run.text = translated_text  # Replace text while preserving formatting
+                            except Exception as e:
+                                print(f"Error translating cell text: {e}")
+                                continue  # Skip this run if there's an error
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    return doc
 
-    # Display the existing chat messages via `st.chat_message`.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
 
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
+def main():
+    st.title("Word Document Translator")
 
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    # Upload the document
+    uploaded_file = st.file_uploader("Upload a Word Document", type=["docx"])
+    
+    if uploaded_file:
+        # Load the document
+        doc = Document(uploaded_file)
 
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
+        # Dropdown for language selection
+        language_options = {
+            "Bengali": "bn", "Hindi": "hi", "Odia": "or", "Punjabi": "pa", 
+            "Tamil": "ta", "Telegu": "te", "Gujarati": "gu", "Malayalam": "ml"
+        }
+        target_language = st.selectbox("Select Target Language", options=list(language_options.keys()))
+        language_code = language_options[target_language]
 
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
-        with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        # Translate button
+        if st.button("Translate Document"):
+            with st.spinner('Translating...'):
+                translated_doc = translate_doc(doc, language_code)
+
+                # Save the translated document
+                with open("translated_document.docx", "wb") as f:
+                    translated_doc.save(f)
+
+                # Provide the download button
+                with open("translated_document.docx", "rb") as f:
+                    st.download_button(
+                        label="Download Translated Document",
+                        data=f,
+                        file_name="translated_document.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                st.success("Translation complete!")
+
+if __name__ == '__main__':
+    main()
