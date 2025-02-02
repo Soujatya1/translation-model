@@ -4,38 +4,38 @@ from deep_translator import GoogleTranslator
 
 def translate_doc(doc, destination='hi'):
     """
-    Translate a Word document and save the result with the same format, showing only the translated text.
+    Translate a Word document and save the result with the same format, ensuring all text is translated properly.
     
     :param doc: Word doc object (from Document class)
     :param destination: Target language (default is Hindi 'hi')
     """
-    translator = GoogleTranslator(source='auto', target=destination)
+    translator = GoogleTranslator(source='en', target=destination)  # Explicitly set source language
 
     # Translate paragraphs
     for p in doc.paragraphs:
         if p.text.strip():  # Check if the paragraph is not empty
-            for run in p.runs:  # Iterate over runs in the paragraph to preserve formatting
-                if run.text.strip():  # Translate only non-empty runs
-                    try:
-                        translated_text = translator.translate(run.text)
-                        run.text = translated_text  # Replace text while preserving formatting
-                    except Exception as e:
-                        print(f"Error translating paragraph: {e}")
-                        continue  # Skip this run if there's an error
+            try:
+                translated_text = translator.translate(p.text.strip())  # Translate whole paragraph
+                p.clear()  # Clear paragraph to retain formatting
+                p.add_run(translated_text)  # Add translated text back
+            except Exception as e:
+                print(f"Error translating paragraph: {e}")
+                continue 
 
     # Translate table cells
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 if cell.text.strip():  # Check if the cell is not empty
-                    for run in cell.paragraphs[0].runs:  # Iterate over runs in the cell
-                        if run.text.strip():  # Translate only non-empty runs
-                            try:
-                                translated_text = translator.translate(run.text)
-                                run.text = translated_text  # Replace text while preserving formatting
-                            except Exception as e:
-                                print(f"Error translating cell text: {e}")
-                                continue  # Skip this run if there's an error
+                    try:
+                        full_text = "\n".join([para.text.strip() for para in cell.paragraphs])  # Get full text
+                        translated_text = translator.translate(full_text)  # Translate entire cell
+                        
+                        cell.clear()  # Clear cell
+                        cell.text = translated_text  # Assign translated text
+                    except Exception as e:
+                        print(f"Error translating cell text: {e}")
+                        continue  
 
     return doc
 
