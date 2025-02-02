@@ -52,7 +52,7 @@ def translate_doc(doc, destination='hi'):
     return doc
 
 def main():
-    st.title("Word Document Translator")
+    st.title("Word Document Translator!")
 
     uploaded_file = st.file_uploader("Upload a Word Document", type=["docx"])
     
