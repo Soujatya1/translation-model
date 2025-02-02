@@ -21,8 +21,6 @@ def translate_doc(doc, destination='hi'):
                     translated_text = translator.translate(run.text) if run.text.strip() else ""
                     run.text = translated_text  # Update the run's text
                     run.bold = run.bold  # Preserve bold formatting
-                    run.italic = run.italic  # Preserve italic formatting
-                    run.underline = run.underline  # Preserve underline formatting
             except Exception as e:
                 print(f"Error translating paragraph: {e}")
     
@@ -37,8 +35,6 @@ def translate_doc(doc, destination='hi'):
                                 translated_text = translator.translate(run.text) if run.text.strip() else ""
                                 run.text = translated_text  # Update the run's text
                                 run.bold = run.bold  # Preserve bold formatting
-                                run.italic = run.italic  # Preserve italic formatting
-                                run.underline = run.underline  # Preserve underline formatting
                         except Exception as e:
                             print(f"Error translating cell text: {e}")
 
