@@ -1,6 +1,7 @@
 import streamlit as st
 from docx import Document
 from deep_translator import GoogleTranslator
+from io import BytesIO
 
 def translate_text(text, destination='hi'):
     """
@@ -18,29 +19,38 @@ def translate_text(text, destination='hi'):
 
 def translate_doc(doc, destination='hi'):
     """
-    Translate a Word document while preserving format and alignment.
+    Translate a Word document while preserving formatting and alignment.
     :param doc: Word doc object (from `Document` class)
     :param destination: Target language (default is Hindi 'hi')
     :return: Translated Word doc
     """
-    # Translate paragraphs as a whole to avoid breaking formatting
+    # Translate paragraphs while preserving formatting
     for p in doc.paragraphs:
         if p.text.strip():
-            translated_text = translate_text(p.text, destination)
-            p.clear()  # Remove existing runs to avoid formatting issues
-            p.add_run(translated_text)  # Add translated text while preserving alignment
+            original_text = p.text  # Get full paragraph text
+            translated_text = translate_text(original_text, destination)
 
-    # Translate table cells
+            # Replace text in the first run while keeping formatting
+            if p.runs:
+                p.runs[0].text = translated_text
+                for run in p.runs[1:]:  # Clear other runs but keep formatting
+                    run.text = ""
+
+    # Translate table cells while preserving structure
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 if cell.text.strip():
-                    translated_text = translate_text(cell.text, destination)
-                    cell.paragraphs[0].clear()
-                    cell.paragraphs[0].add_run(translated_text)
+                    original_text = cell.text
+                    translated_text = translate_text(original_text, destination)
+
+                    # Preserve formatting by modifying existing runs
+                    if cell.paragraphs and cell.paragraphs[0].runs:
+                        cell.paragraphs[0].runs[0].text = translated_text
+                        for run in cell.paragraphs[0].runs[1:]:  # Clear extra runs
+                            run.text = ""
 
     return doc
-
 
 def main():
     st.title("Word Document Translator")
@@ -61,13 +71,12 @@ def main():
             with st.spinner('Translating...'):
                 translated_doc = translate_doc(doc, language_code)
 
-                # Save the translated document in memory
-                from io import BytesIO
+                # Save translated file to memory
                 translated_io = BytesIO()
                 translated_doc.save(translated_io)
                 translated_io.seek(0)
 
-                # Provide the download button
+                # Provide download button
                 st.download_button(
                     label="Download Translated Document",
                     data=translated_io,
