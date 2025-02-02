@@ -5,7 +5,7 @@ from io import BytesIO
 
 def translate_doc(doc, destination='hi'):
     """
-    Translate a Word document while preserving formatting.
+    Translate a Word document while preserving formatting, including bold text.
     
     :param doc: Word document object.
     :param destination: Target language code.
@@ -14,11 +14,16 @@ def translate_doc(doc, destination='hi'):
 
     # Translate paragraphs
     for p in doc.paragraphs:
-        if p.text.strip():  # Check if the paragraph is not empty
+        if p.text.strip():
             try:
-                translated_text = translator.translate(p.text)
-                p.clear()  # Clear the existing text while preserving style
-                p.add_run(translated_text)  # Add the translated text back
+                new_paragraph = p._element  # Store original paragraph structure
+                p.clear()  # Clear text but keep formatting
+                
+                for run in p.runs:
+                    translated_text = translator.translate(run.text) if run.text.strip() else ""
+                    new_run = p.add_run(translated_text)
+                    new_run.bold = run.bold  # Preserve bold formatting
+
             except Exception as e:
                 print(f"Error translating paragraph: {e}")
     
@@ -26,17 +31,21 @@ def translate_doc(doc, destination='hi'):
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
-                for para in cell.paragraphs:  # Iterate over all paragraphs in the cell
+                for para in cell.paragraphs:
                     if para.text.strip():
                         try:
-                            translated_text = translator.translate(para.text)
+                            new_para = para._element  # Store paragraph structure
                             para.clear()
-                            para.add_run(translated_text)
+                            
+                            for run in para.runs:
+                                translated_text = translator.translate(run.text) if run.text.strip() else ""
+                                new_run = para.add_run(translated_text)
+                                new_run.bold = run.bold  # Preserve bold formatting
+
                         except Exception as e:
                             print(f"Error translating cell text: {e}")
 
     return doc
-
 
 def main():
     st.title("Word Document Translator")
