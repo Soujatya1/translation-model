@@ -4,23 +4,21 @@ from deep_translator import GoogleTranslator
 
 def translate_doc(doc, destination='hi'):
     """
-    Translate a Word document and save the result with the same format, ensuring all text is translated properly.
+    Translate a Word document while ensuring all text is properly replaced and appears in the output document.
     
     :param doc: Word doc object (from Document class)
     :param destination: Target language (default is Hindi 'hi')
     """
-    translator = GoogleTranslator(source='en', target=destination)  # Explicitly set source language
+    translator = GoogleTranslator(source='auto', target=destination)  # Ensure correct source detection
 
     # Translate paragraphs
     for p in doc.paragraphs:
         if p.text.strip():  # Check if the paragraph is not empty
             try:
-                translated_text = translator.translate(p.text.strip())  # Translate whole paragraph
-                p.clear()  # Clear paragraph to retain formatting
-                p.add_run(translated_text)  # Add translated text back
+                translated_text = translator.translate(p.text.strip()) or p.text  # Fallback to original text
+                p.text = translated_text  # Replace entire paragraph text
             except Exception as e:
                 print(f"Error translating paragraph: {e}")
-                continue 
 
     # Translate table cells
     for table in doc.tables:
@@ -28,17 +26,15 @@ def translate_doc(doc, destination='hi'):
             for cell in row.cells:
                 if cell.text.strip():  # Check if the cell is not empty
                     try:
-                        full_text = "\n".join([para.text.strip() for para in cell.paragraphs])  # Get full text
-                        translated_text = translator.translate(full_text)  # Translate entire cell
+                        full_text = "\n".join([para.text.strip() for para in cell.paragraphs])  # Collect all text
+                        translated_text = translator.translate(full_text) or full_text  # Fallback to original text
                         
-                        cell.clear()  # Clear cell
-                        cell.text = translated_text  # Assign translated text
+                        # Clear existing content properly
+                        cell.text = translated_text  
                     except Exception as e:
                         print(f"Error translating cell text: {e}")
-                        continue  
 
     return doc
-
 
 def main():
     st.title("Word Document Translator")
