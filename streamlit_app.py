@@ -6,7 +6,7 @@ def translate_doc(doc, destination='hi'):
     """
     Translate a Word document and save the result with the same format, showing only the translated text.
     
-    :param doc: Word doc object (from Document class)
+    :param doc: Word doc object (from `Document` class)
     :param destination: Target language (default is Hindi 'hi')
     """
     translator = GoogleTranslator(source='auto', target=destination)
