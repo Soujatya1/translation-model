@@ -16,15 +16,13 @@ def translate_doc(doc, destination='hi'):
     for p in doc.paragraphs:
         if p.text.strip():  # Check if the paragraph is not empty
             try:
-                # Create a new paragraph to store translated content
-                new_paragraph = doc.add_paragraph()
-                
+                # We will translate each run and preserve the formatting
                 for run in p.runs:
                     translated_text = translator.translate(run.text) if run.text.strip() else ""
-                    new_run = new_paragraph.add_run(translated_text)
-                    new_run.bold = run.bold  # Preserve bold formatting
-                    new_run.italic = run.italic  # Preserve italic formatting
-                    new_run.underline = run.underline  # Preserve underline formatting
+                    run.text = translated_text  # Update the run's text
+                    run.bold = run.bold  # Preserve bold formatting
+                    run.italic = run.italic  # Preserve italic formatting
+                    run.underline = run.underline  # Preserve underline formatting
             except Exception as e:
                 print(f"Error translating paragraph: {e}")
     
@@ -35,16 +33,12 @@ def translate_doc(doc, destination='hi'):
                 for para in cell.paragraphs:
                     if para.text.strip():  # Skip empty paragraphs
                         try:
-                            new_para = para._element  # Store original paragraph structure
-                            para.clear()  # Clear the existing content
-                            
                             for run in para.runs:
                                 translated_text = translator.translate(run.text) if run.text.strip() else ""
-                                new_run = para.add_run(translated_text)
-                                new_run.bold = run.bold  # Preserve bold formatting
-                                new_run.italic = run.italic  # Preserve italic formatting
-                                new_run.underline = run.underline  # Preserve underline formatting
-
+                                run.text = translated_text  # Update the run's text
+                                run.bold = run.bold  # Preserve bold formatting
+                                run.italic = run.italic  # Preserve italic formatting
+                                run.underline = run.underline  # Preserve underline formatting
                         except Exception as e:
                             print(f"Error translating cell text: {e}")
 
