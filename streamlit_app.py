@@ -24,27 +24,21 @@ def translate_doc(doc, destination='hi'):
     :param destination: Target language (default is Hindi 'hi')
     :return: Translated Word doc
     """
-    # Translate paragraphs while preserving formatting
+    # Translate paragraphs as a whole to avoid missed words
     for p in doc.paragraphs:
         if p.text.strip():
-            original_text = p.text  # Get full paragraph text
-            translated_text = translate_text(original_text, destination)
-
-            # Replace text in the first run while keeping formatting
+            translated_text = translate_text(p.text, destination)
             if p.runs:
-                p.runs[0].text = translated_text
-                for run in p.runs[1:]:  # Clear other runs but keep formatting
+                p.runs[0].text = translated_text  # Update the first run
+                for run in p.runs[1:]:  # Clear text in other runs but keep formatting
                     run.text = ""
 
-    # Translate table cells while preserving structure
+    # Translate table cells as a whole
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 if cell.text.strip():
-                    original_text = cell.text
-                    translated_text = translate_text(original_text, destination)
-
-                    # Preserve formatting by modifying existing runs
+                    translated_text = translate_text(cell.text, destination)
                     if cell.paragraphs and cell.paragraphs[0].runs:
                         cell.paragraphs[0].runs[0].text = translated_text
                         for run in cell.paragraphs[0].runs[1:]:  # Clear extra runs
