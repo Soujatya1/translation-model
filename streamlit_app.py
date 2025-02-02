@@ -11,12 +11,23 @@ def batch_translate(texts, destination='hi'):
     :return: List of translated texts
     """
     if not texts:
-        return []  # Return an empty list if there's nothing to translate
-    
+        return []  # Return an empty list if input is empty
+
     translator = GoogleTranslator(source='auto', target=destination)
     try:
         translated_texts = translator.translate_batch(texts)
-        return translated_texts if translated_texts else texts  # Ensure we return a list
+        
+        # If API returns None, return original texts
+        if translated_texts is None:
+            print("Warning: translate_batch() returned None, using original texts.")
+            return texts
+        
+        # Ensure the output list is the correct length
+        if len(translated_texts) != len(texts):
+            print("Warning: Translated text length mismatch, using original texts.")
+            return texts
+        
+        return translated_texts
     except Exception as e:
         print(f"Error translating batch: {e}")
         return texts  # Return original texts if translation fails
@@ -56,7 +67,7 @@ def translate_doc(doc, destination='hi'):
     return doc
 
 def main():
-    st.title("Word Document Translator!!!")
+    st.title("Word Document Translator")
 
     uploaded_file = st.file_uploader("Upload a Word Document", type=["docx"])
     
