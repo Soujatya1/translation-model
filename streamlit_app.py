@@ -1,73 +1,78 @@
 import streamlit as st
 from docx import Document
 from deep_translator import GoogleTranslator
+from concurrent.futures import ThreadPoolExecutor
+
+def batch_translate(texts, destination='hi'):
+    """
+    Translate a batch of texts in a single API call.
+    :param texts: List of texts to translate
+    :param destination: Target language code
+    :return: List of translated texts
+    """
+    translator = GoogleTranslator(source='auto', target=destination)
+    try:
+        return translator.translate_batch(texts)
+    except Exception as e:
+        print(f"Error translating batch: {e}")
+        return texts  # Return original texts if translation fails
 
 def translate_doc(doc, destination='hi'):
     """
-    Translate a Word document and save the result with the same format, showing only the translated text.
-    
+    Translate a Word document efficiently while preserving formatting.
     :param doc: Word doc object (from `Document` class)
-    :param destination: Target language (default is Hindi 'hi')
+    :param destination: Target language
+    :return: Translated Word document
     """
     translator = GoogleTranslator(source='auto', target=destination)
 
-    # Translate paragraphs
-    for p in doc.paragraphs:
-        if p.text.strip():  # Check if the paragraph is not empty
-            for run in p.runs:  # Iterate over runs in the paragraph to preserve formatting
-                if run.text.strip():  # Translate only non-empty runs
-                    try:
-                        translated_text = translator.translate(run.text)
-                        run.text = translated_text  # Replace text while preserving formatting
-                    except Exception as e:
-                        print(f"Error translating paragraph: {e}")
-                        continue  # Skip this run if there's an error
+    # Collect all text blocks
+    paragraphs = [p for p in doc.paragraphs if p.text.strip()]
+    cells = [cell for table in doc.tables for row in table.rows for cell in row.cells if cell.text.strip()]
+    
+    # Extract text for batch translation
+    paragraph_texts = [p.text for p in paragraphs]
+    cell_texts = [cell.text for cell in cells]
 
-    # Translate table cells
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                if cell.text.strip():  # Check if the cell is not empty
-                    for run in cell.paragraphs[0].runs:  # Iterate over runs in the cell
-                        if run.text.strip():  # Translate only non-empty runs
-                            try:
-                                translated_text = translator.translate(run.text)
-                                run.text = translated_text  # Replace text while preserving formatting
-                            except Exception as e:
-                                print(f"Error translating cell text: {e}")
-                                continue  # Skip this run if there's an error
+    # Use ThreadPoolExecutor for parallel processing
+    with ThreadPoolExecutor() as executor:
+        future_paragraphs = executor.submit(batch_translate, paragraph_texts, destination)
+        future_cells = executor.submit(batch_translate, cell_texts, destination)
+
+        translated_paragraphs = future_paragraphs.result()
+        translated_cells = future_cells.result()
+
+    # Assign translated text back
+    for p, translated_text in zip(paragraphs, translated_paragraphs):
+        p.text = translated_text
+
+    for cell, translated_text in zip(cells, translated_cells):
+        cell.text = translated_text
 
     return doc
-
 
 def main():
     st.title("Word Document Translator")
 
-    # Upload the document
     uploaded_file = st.file_uploader("Upload a Word Document", type=["docx"])
     
     if uploaded_file:
-        # Load the document
         doc = Document(uploaded_file)
 
-        # Dropdown for language selection
         language_options = {
-            "Bengali": "bn", "Hindi": "hi", "Odia": "or", "Punjabi": "pa", 
+            "Bengali": "bn", "Hindi": "hi", "Odia": "or", "Punjabi": "pa",
             "Tamil": "ta", "Telegu": "te", "Gujarati": "gu", "Malayalam": "ml"
         }
         target_language = st.selectbox("Select Target Language", options=list(language_options.keys()))
         language_code = language_options[target_language]
 
-        # Translate button
         if st.button("Translate Document"):
             with st.spinner('Translating...'):
                 translated_doc = translate_doc(doc, language_code)
 
-                # Save the translated document
                 with open("translated_document.docx", "wb") as f:
                     translated_doc.save(f)
 
-                # Provide the download button
                 with open("translated_document.docx", "rb") as f:
                     st.download_button(
                         label="Download Translated Document",
