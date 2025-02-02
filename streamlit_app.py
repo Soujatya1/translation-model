@@ -10,9 +10,13 @@ def batch_translate(texts, destination='hi'):
     :param destination: Target language code
     :return: List of translated texts
     """
+    if not texts:
+        return []  # Return an empty list if there's nothing to translate
+    
     translator = GoogleTranslator(source='auto', target=destination)
     try:
-        return translator.translate_batch(texts)
+        translated_texts = translator.translate_batch(texts)
+        return translated_texts if translated_texts else texts  # Ensure we return a list
     except Exception as e:
         print(f"Error translating batch: {e}")
         return texts  # Return original texts if translation fails
@@ -24,8 +28,6 @@ def translate_doc(doc, destination='hi'):
     :param destination: Target language
     :return: Translated Word document
     """
-    translator = GoogleTranslator(source='auto', target=destination)
-
     # Collect all text blocks
     paragraphs = [p for p in doc.paragraphs if p.text.strip()]
     cells = [cell for table in doc.tables for row in table.rows for cell in row.cells if cell.text.strip()]
@@ -39,20 +41,22 @@ def translate_doc(doc, destination='hi'):
         future_paragraphs = executor.submit(batch_translate, paragraph_texts, destination)
         future_cells = executor.submit(batch_translate, cell_texts, destination)
 
-        translated_paragraphs = future_paragraphs.result()
-        translated_cells = future_cells.result()
+        translated_paragraphs = future_paragraphs.result() or paragraph_texts
+        translated_cells = future_cells.result() or cell_texts
 
-    # Assign translated text back
-    for p, translated_text in zip(paragraphs, translated_paragraphs):
-        p.text = translated_text
+    # Ensure translated lists are the correct length
+    if len(translated_paragraphs) == len(paragraphs):
+        for p, translated_text in zip(paragraphs, translated_paragraphs):
+            p.text = translated_text
 
-    for cell, translated_text in zip(cells, translated_cells):
-        cell.text = translated_text
+    if len(translated_cells) == len(cells):
+        for cell, translated_text in zip(cells, translated_cells):
+            cell.text = translated_text
 
     return doc
 
 def main():
-    st.title("Word Document Translator!")
+    st.title("Word Document Translator!!!")
 
     uploaded_file = st.file_uploader("Upload a Word Document", type=["docx"])
     
