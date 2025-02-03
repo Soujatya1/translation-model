@@ -31,7 +31,11 @@ def translate_doc(doc, destination='hi'):
                 if cell.text.strip():
                     try:
                         full_text = "\n".join([para.text.strip() for para in cell.paragraphs])
-                        translated_text = translator.translate(full_text) or full_text
+                        try:
+                            translated_text = translator.translate(full_text)
+                        except Exception as e:
+                            print(f"Error translating cell text: {e}")
+                            translated_text = full_text
                         for para in cell.paragraphs:
                             full_text = "".join([run.text for run in para.runs if run.text.strip()])  # Preserve structure
                         for run in para.runs:
