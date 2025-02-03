@@ -88,7 +88,7 @@ def main():
                 
                 # Add logo to the first page header
                 # Make sure 'logo.png' is in the same directory as your script or provide the full path.
-                logo_path = "logo.png"  # Update this path as needed
+                logo_path = "HHFL.png"  # Update this path as needed
                 translated_doc = add_logo_to_first_page(translated_doc, logo_path, width_inches=1)
  
                 # Save the translated document
