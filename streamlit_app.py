@@ -20,7 +20,7 @@ def translate_doc(doc, destination='hi'):
                 for run in p.runs:
                     run.text = ''  # Clear existing text
                 new_run = p.add_run(translated_text)
-                new_run.font.size = Pt(12)  # Ensure appropriate font size
+                new_run.font.size = Pt(8)  # Ensure appropriate font size
             except Exception as e:
                 print(f"Error translating paragraph: {e}")
     
@@ -37,7 +37,7 @@ def translate_doc(doc, destination='hi'):
                                 run.text = ''  # Clear existing text
                         cell.text = ''  # Ensure text is reset before adding translation
                         new_para = cell.paragraphs[0].add_run(translated_text)
-                        new_para.font.size = Pt(12)  # Set font size to avoid overflow
+                        new_para.font.size = Pt(8)  # Set font size to avoid overflow
                     except Exception as e:
                         print(f"Error translating cell text: {e}")
     
