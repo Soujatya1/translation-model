@@ -33,7 +33,7 @@ def translate_doc(doc, destination='hi'):
                         full_text = "\n".join([para.text.strip() for para in cell.paragraphs])
                         translated_text = translator.translate(full_text) or full_text
                         for para in cell.paragraphs:
-                        full_text = "".join([run.text for run in para.runs if run.text.strip()])  # Preserve structure
+                            full_text = "".join([run.text for run in para.runs if run.text.strip()])  # Preserve structure
                         for run in para.runs:
                             run.text = ''  # Clear existing text but keep structure
                         # Keep paragraph structure intact instead of resetting cell.text
