@@ -7,20 +7,34 @@ from deep_translator import GoogleTranslator
 def translate_doc(doc, destination='hi'):
     """
     Translate a Word document while preserving formatting and structure.
+    Ensure the first paragraph (header) is bold.
     :param doc: Word doc object (from Document class)
     :param destination: Target language (default is Hindi 'hi')
     """
     translator = GoogleTranslator(source='auto', target=destination)
+
+    # Track if first meaningful paragraph is found
+    first_paragraph_found = False
     
     # Translate paragraphs while preserving formatting
     for p in doc.paragraphs:
-        if p.text.strip():
+        if p.text.strip():  # Ensure paragraph is not empty
             try:
                 translated_text = translator.translate(p.text.strip()) or p.text
+                
+                # Clear existing runs
                 for run in p.runs:
                     run.text = ''
+                
+                # Add translated text
                 new_run = p.add_run(translated_text)
                 new_run.font.size = Pt(9)
+
+                # Make the first meaningful paragraph bold
+                if not first_paragraph_found:
+                    new_run.bold = True
+                    first_paragraph_found = True
+
             except Exception as e:
                 print(f"Error translating paragraph: {e}")
     
@@ -32,15 +46,17 @@ def translate_doc(doc, destination='hi'):
                     try:
                         full_text = "\n".join([para.text.strip() for para in cell.paragraphs])
                         translated_text = translator.translate(full_text) or full_text
+                        
                         for para in cell.paragraphs:
                             for run in para.runs:
                                 run.text = ''
                         cell.text = ''
+                        
                         new_para = cell.paragraphs[0].add_run(translated_text)
                         new_para.font.size = Pt(9)
                     except Exception as e:
                         print(f"Error translating cell text: {e}")
-    
+
     return doc
 
 def main():
