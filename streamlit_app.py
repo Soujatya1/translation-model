@@ -16,16 +16,18 @@ def translate_doc(doc, destination='hi'):
     for p in doc.paragraphs:
         if p.text.strip():
             try:
+                # Combine text from all runs in a paragraph
                 full_text = " ".join([run.text for run in p.runs if run.text.strip()])
                 translated_text = translator.translate(full_text) or full_text  # Single API call
                 
-                # Clear existing runs
+                # Clear existing runs and apply translated text to the first run
                 for run in p.runs:
                     run.text = ""
 
-                # Apply translated text to the first run while keeping its formatting
+                # Add translated text to the first run while preserving its formatting
                 if p.runs:
                     p.runs[0].text = translated_text
+
             except Exception as e:
                 print(f"Error translating paragraph: {e}")
 
@@ -35,6 +37,7 @@ def translate_doc(doc, destination='hi'):
             for cell in row.cells:
                 if cell.text.strip():
                     try:
+                        # Combine text from all paragraphs within a cell
                         full_text = " ".join([para.text for para in cell.paragraphs if para.text.strip()])
                         translated_text = translator.translate(full_text) or full_text  # Single API call
                         
@@ -43,13 +46,15 @@ def translate_doc(doc, destination='hi'):
                             for run in para.runs:
                                 run.text = ""
 
-                        # Apply translated text to the first paragraph
+                        # Add translated text to the first paragraph
                         if cell.paragraphs:
                             cell.paragraphs[0].add_run(translated_text)
+
                     except Exception as e:
                         print(f"Error translating cell text: {e}")
 
     return doc
+
 
 
 def main():
