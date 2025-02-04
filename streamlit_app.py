@@ -4,40 +4,7 @@ from docx.oxml.ns import qn
 from docx.shared import Pt
 from deep_translator import GoogleTranslator
 
-def translate_doc(doc, destination='hi'):
-    """
-    Translate a Word document while preserving formatting and structure.
-    :param doc: Word doc object (from Document class)
-    :param destination: Target language (default is Hindi 'hi')
-    """
-    translator = GoogleTranslator(source='auto', target=destination)
 
-    # Translate paragraphs while preserving formatting
-    for p in doc.paragraphs:
-        if p.text.strip():
-            try:
-                for run in p.runs:
-                    if run.text.strip():
-                        translated_text = translator.translate(run.text.strip()) or run.text
-                        run.text = translated_text  # Update text while keeping existing formatting
-            except Exception as e:
-                print(f"Error translating paragraph: {e}")
-
-    # Translate table cells while preserving structure
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                if cell.text.strip():
-                    try:
-                        for para in cell.paragraphs:
-                            for run in para.runs:
-                                if run.text.strip():
-                                    translated_text = translator.translate(run.text.strip()) or run.text
-                                    run.text = translated_text  # Preserve formatting
-                    except Exception as e:
-                        print(f"Error translating cell text: {e}")
-
-    return doc
 
 def main():
     st.title("Word Document Translator")
