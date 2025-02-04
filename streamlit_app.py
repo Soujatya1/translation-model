@@ -12,44 +12,36 @@ def translate_doc(doc, destination='hi'):
     """
     translator = GoogleTranslator(source='auto', target=destination)
 
-    # Translate paragraphs efficiently
+    # Translate paragraphs efficiently and preserve formatting
     for p in doc.paragraphs:
         if p.text.strip():
             try:
-                # Combine text from all runs in a paragraph
-                full_text = " ".join([run.text for run in p.runs if run.text.strip()])
-                translated_text = translator.translate(full_text) or full_text  # Single API call
-                
-                # Clear existing runs and apply translated text to the first run
+                # Translate each run separately, while preserving its format
                 for run in p.runs:
-                    run.text = ""
+                    if run.text.strip():  # Only translate if there is text
+                        original_text = run.text.strip()
+                        translated_text = translator.translate(original_text) or original_text
 
-                # Add translated text to the first run while preserving its formatting
-                if p.runs:
-                    p.runs[0].text = translated_text
+                        # Update the run's text with the translated text
+                        run.text = translated_text
 
             except Exception as e:
                 print(f"Error translating paragraph: {e}")
 
-    # Translate table cells efficiently
+    # Translate table cells efficiently and preserve formatting
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 if cell.text.strip():
                     try:
-                        # Combine text from all paragraphs within a cell
-                        full_text = " ".join([para.text for para in cell.paragraphs if para.text.strip()])
-                        translated_text = translator.translate(full_text) or full_text  # Single API call
-                        
-                        # Clear existing content
                         for para in cell.paragraphs:
                             for run in para.runs:
-                                run.text = ""
+                                if run.text.strip():  # Only translate if there is text
+                                    original_text = run.text.strip()
+                                    translated_text = translator.translate(original_text) or original_text
 
-                        # Add translated text to the first paragraph
-                        if cell.paragraphs:
-                            cell.paragraphs[0].add_run(translated_text)
-
+                                    # Update the run's text with the translated text
+                                    run.text = translated_text
                     except Exception as e:
                         print(f"Error translating cell text: {e}")
 
