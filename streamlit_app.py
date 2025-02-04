@@ -4,6 +4,52 @@ from docx.oxml.ns import qn
 from docx.shared import Pt
 from deep_translator import GoogleTranslator
 
+def translate_doc(doc, destination='hi'):
+    """
+    Translate a Word document while preserving formatting efficiently.
+    :param doc: Word doc object (from Document class)
+    :param destination: Target language (default is Hindi 'hi')
+    """
+    translator = GoogleTranslator(source='auto', target=destination)
+
+    # Translate paragraphs efficiently
+    for p in doc.paragraphs:
+        if p.text.strip():
+            try:
+                full_text = " ".join([run.text for run in p.runs if run.text.strip()])
+                translated_text = translator.translate(full_text) or full_text  # Single API call
+                
+                # Clear existing runs
+                for run in p.runs:
+                    run.text = ""
+
+                # Apply translated text to the first run while keeping its formatting
+                if p.runs:
+                    p.runs[0].text = translated_text
+            except Exception as e:
+                print(f"Error translating paragraph: {e}")
+
+    # Translate table cells efficiently
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                if cell.text.strip():
+                    try:
+                        full_text = " ".join([para.text for para in cell.paragraphs if para.text.strip()])
+                        translated_text = translator.translate(full_text) or full_text  # Single API call
+                        
+                        # Clear existing content
+                        for para in cell.paragraphs:
+                            for run in para.runs:
+                                run.text = ""
+
+                        # Apply translated text to the first paragraph
+                        if cell.paragraphs:
+                            cell.paragraphs[0].add_run(translated_text)
+                    except Exception as e:
+                        print(f"Error translating cell text: {e}")
+
+    return doc
 
 
 def main():
