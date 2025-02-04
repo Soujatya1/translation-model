@@ -3,52 +3,69 @@ from docx import Document
 from docx.oxml.ns import qn
 from docx.shared import Pt
 from deep_translator import GoogleTranslator
+import concurrent.futures
+
+def translate_run(run_text, translator):
+    """
+    Helper function to translate individual run text.
+    :param run_text: The text of a run to translate.
+    :param translator: The Google Translator instance.
+    :return: Translated text.
+    """
+    try:
+        translated_text = translator.translate(run_text.strip()) or run_text
+        return translated_text
+    except Exception as e:
+        print(f"Error translating run: {e}")
+        return run_text  # Return original text in case of an error
 
 def translate_doc(doc, destination='hi'):
     """
-    Translate a Word document while preserving formatting efficiently.
+    Translate a Word document while preserving formatting efficiently using concurrency.
     :param doc: Word doc object (from Document class)
     :param destination: Target language (default is Hindi 'hi')
     """
     translator = GoogleTranslator(source='auto', target=destination)
 
-    # Translate paragraphs efficiently and preserve formatting
-    for p in doc.paragraphs:
-        if p.text.strip():
-            try:
-                # Translate each run separately, while preserving its format
+    # Create a ThreadPoolExecutor for parallel translation
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = []
+
+        # Translate paragraphs and runs concurrently
+        for p in doc.paragraphs:
+            if p.text.strip():
                 for run in p.runs:
-                    if run.text.strip():  # Only translate if there is text
-                        original_text = run.text.strip()
-                        translated_text = translator.translate(original_text) or original_text
+                    if run.text.strip():
+                        futures.append(executor.submit(translate_run, run.text.strip(), translator))
 
-                        # Update the run's text with the translated text
-                        run.text = translated_text
-
-            except Exception as e:
-                print(f"Error translating paragraph: {e}")
-
-    # Translate table cells efficiently and preserve formatting
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                if cell.text.strip():
-                    try:
+        # Translate table cells and runs concurrently
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell.text.strip():
                         for para in cell.paragraphs:
                             for run in para.runs:
-                                if run.text.strip():  # Only translate if there is text
-                                    original_text = run.text.strip()
-                                    translated_text = translator.translate(original_text) or original_text
+                                if run.text.strip():
+                                    futures.append(executor.submit(translate_run, run.text.strip(), translator))
 
-                                    # Update the run's text with the translated text
+        # Wait for all translations to finish and update runs with translated text
+        for future in concurrent.futures.as_completed(futures):
+            translated_text = future.result()
+            # Find the corresponding run and update the text (this step assumes text is updated in place)
+            for p in doc.paragraphs:
+                for run in p.runs:
+                    if run.text.strip() == translated_text:
+                        run.text = translated_text
+
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        for para in cell.paragraphs:
+                            for run in para.runs:
+                                if run.text.strip() == translated_text:
                                     run.text = translated_text
-                    except Exception as e:
-                        print(f"Error translating cell text: {e}")
 
     return doc
-
-
-
 def main():
     st.title("Word Document Translator")
     
